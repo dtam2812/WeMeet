@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User{
+  id String @id @default(cuid())
+  email String @unique
+  password String
+  name String
+  imageUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  refreshTokens RefreshToken[]
+  hostedMeetings Meeting[] @relation("HostedMeetings")
+  participations MeetingParticipant[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id         String   @id @default(cuid())
+  token      String   @unique 
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt  DateTime
+  revoked    Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@map("refreshTokens")
+}
+
+model Meeting{
+  id String @id @default(cuid())
+  streamCallId String @unique
+  description String?
+  type MeetingType @default(INSTANT)
+  status MeetingStatus @default(SCHEDULED)
+  hostId String
+  host User @relation("HostedMeetings",fields:[hostId], references:[id])
+  startsAt DateTime?
+  endedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants MeetingParticipant[]
+
+  @@index([hostId])
+  @@map("meetings")
+}
+
+model MeetingParticipant {
+  id        String          @id @default(cuid())
+
+  meetingId String
+  meeting   Meeting         @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  userId    String
+  user      User            @relation(fields: [userId], references: [id])
+
+  role      ParticipantRole @default(ATTENDEE)
+  joinedAt  DateTime?
+  leftAt    DateTime?
+
+  @@unique([meetingId, userId])
+  @@index([meetingId])
+  @@map("meetingParticipants")
+}
+
+enum MeetingType {
+  INSTANT
+  SCHEDULED
+  PERSONAL_ROOM
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  ONGOING
+  ENDED
+  CANCELLED
+}
+
+enum ParticipantRole {
+  HOST
+  CO_HOST
+  ATTENDEE
+}
