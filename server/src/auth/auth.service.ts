@@ -1,8 +1,11 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { RefreshTokenDto } from 'src/dto/refreshTokenDto';
 import { SignInUserDto } from 'src/dto/signInUserDto';
 import { PrismaService } from 'src/prisma.service';
 import { comparePassword } from 'src/utils/hashing';
+import { generateRefreshToken, hashToken } from 'src/utils/token';
+import type { StringValue } from 'ms';
 
 @Injectable()
 export class AuthService {
@@ -24,15 +27,72 @@ export class AuthService {
     if (!isMatched)
       throw new UnauthorizedException('Invalid email address or password');
 
-    const accessToken = await this.jwtService.signAsync(
+    return this.issueTokens(user.id, user.email, user.name);
+  }
+
+  async refreshTokens(dto: RefreshTokenDto) {
+    const tokenHash = hashToken(dto.refreshToken);
+
+    const record = await this.prismaService.refreshToken.findUnique({
+      where: { token: tokenHash },
+    });
+
+    if (!record || record.revoked || record.expiresAt < new Date()) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
+
+    await this.prismaService.refreshToken.update({
+      where: { id: record.id },
+      data: { revoked: true },
+    });
+
+    const user = await this.prismaService.user.findUnique({
+      where: { id: record.userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('User no longer exists');
+    }
+
+    return this.issueTokens(user.id, user.email, user.name);
+  }
+
+  async logout(dto: RefreshTokenDto) {
+    const tokenHash = hashToken(dto.refreshToken);
+
+    await this.prismaService.refreshToken.updateMany({
+      where: { token: tokenHash },
+      data: { revoked: true },
+    });
+
+    return { message: 'Logged out successfully' };
+  }
+
+  private async issueTokens(userId: string, email: string, name: string) {
+    const accessToken = this.jwtService.signAsync(
       {
-        sub: user.id,
-        email: user.email,
-        name: user.name,
+        sub: userId,
+        email,
+        name,
       },
-      { expiresIn: '1d' },
+      {
+        expiresIn: (process.env.JWT_ACCESS_EXPIRES ?? '15m') as StringValue,
+      },
     );
 
-    return accessToken;
+    const rawRefreshToken = generateRefreshToken();
+    const expiresAt = new Date();
+    expiresAt.setDate(
+      expiresAt.getDate() + Number(process.env.REFRESH_TOKEN_EXPIRES_DAYS ?? 7),
+    );
+
+    await this.prismaService.refreshToken.create({
+      data: {
+        token: hashToken(rawRefreshToken),
+        userId,
+        expiresAt,
+      },
+    });
+    return { accessToken, refreshToken: rawRefreshToken };
   }
 }

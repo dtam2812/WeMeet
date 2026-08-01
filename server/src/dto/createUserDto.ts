@@ -10,7 +10,7 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty({ message: 'Email must be filled' })
   @MaxLength(50, { message: 'Email must be less than 50 characters' })
-  @IsEmail({ message: 'Email must be a valid email address' })
+  @IsEmail({}, { message: 'Email must be a valid email address' })
   email: string;
 
   @IsString()

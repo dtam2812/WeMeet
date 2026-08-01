@@ -9,7 +9,7 @@ import {
 export class SignInUserDto {
   @IsString()
   @IsNotEmpty({ message: 'Email must be filled' })
-  @IsEmail({ message: 'Email must be a valid email address' })
+  @IsEmail({}, { message: 'Email must be a valid email address' })
   email: string;
 
   @IsString()
