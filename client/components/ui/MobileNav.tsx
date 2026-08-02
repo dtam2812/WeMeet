@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Sheet,
   SheetClose,
@@ -25,6 +25,11 @@ function MobileNav() {
   const pathName = usePathname();
   const [isOpenDropdown, setIsOpenDropdown] = useState<boolean>(false);
   const timeOutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    setIsLoggedIn(!!localStorage.getItem("refreshToken"));
+  }, []);
 
   const onMouseEnter = () => {
     if (timeOutRef.current) clearTimeout(timeOutRef.current);
@@ -39,31 +44,34 @@ function MobileNav() {
     <section className="w-full max-w-[264px]">
       <Sheet>
         <div className="flex gap-x-3">
-          <Link
-            href="sign-in"
-            className="p-3 font-semibold bg-blue-1 rounded-lg text-white cursor-pointer hover:opacity-75 transition-all"
-          >
-            <p>Sign in</p>
-          </Link>
-          {/* <div
-            onMouseEnter={onMouseEnter}
-            onMouseLeave={onMouseLeave}
-            className="relative rounded-full p-4 border border-red-600 cursor-pointer"
-          >
-            {isOpenDropdown && (
-              <div className="absolute bg-slate-300 w-40 top-10 right-0 text-start rounded-lg font-semibold">
-                <div className=" flex items-center gap-2 p-3 hover:bg-slate-700 hover:text-white rounded-t-lg transition-all">
-                  <FontAwesomeIcon icon={faUser} />
-                  <p className=" "> Your account</p>
+          {isLoggedIn ? (
+            <div
+              onMouseEnter={onMouseEnter}
+              onMouseLeave={onMouseLeave}
+              className="relative rounded-full p-4 border border-red-600 cursor-pointer"
+            >
+              {isOpenDropdown && (
+                <div className="absolute bg-slate-300 w-40 top-10 right-0 text-start rounded-lg font-semibold">
+                  <div className=" flex items-center gap-2 p-3 hover:bg-slate-700 hover:text-white rounded-t-lg transition-all">
+                    <FontAwesomeIcon icon={faUser} />
+                    <p className=" "> Your account</p>
+                  </div>
+                  <hr />
+                  <div className=" flex items-center gap-2 p-3 hover:bg-slate-700 hover:text-white rounded-b-lg transition-all">
+                    <FontAwesomeIcon icon={faArrowRightFromBracket} />
+                    <p className=" "> Log out</p>
+                  </div>
                 </div>
-                <hr />
-                <div className=" flex items-center gap-2 p-3 hover:bg-slate-700 hover:text-white rounded-b-lg transition-all">
-                  <FontAwesomeIcon icon={faArrowRightFromBracket} />
-                  <p className=" "> Log out</p>
-                </div>
-              </div>
-            )}
-          </div> */}
+              )}
+            </div>
+          ) : (
+            <Link
+              href="sign-in"
+              className="p-3 font-semibold bg-blue-1 rounded-lg text-white cursor-pointer hover:opacity-75 transition-all"
+            >
+              <p>Sign in</p>
+            </Link>
+          )}
 
           <SheetTrigger>
             <Image

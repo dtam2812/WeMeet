@@ -69,7 +69,7 @@ export class AuthService {
   }
 
   private async issueTokens(userId: string, email: string, name: string) {
-    const accessToken = this.jwtService.signAsync(
+    const accessToken = await this.jwtService.signAsync(
       {
         sub: userId,
         email,

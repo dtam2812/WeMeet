@@ -15,6 +15,10 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/common";
+import axios from "axios";
 
 type FormSignInData = {
   email: string;
@@ -22,18 +26,8 @@ type FormSignInData = {
 };
 
 const schema = z.object({
-  email: z
-    .string()
-    .trim()
-    .refine((data) => {
-      console.log(data);
-    }),
-  password: z
-    .string()
-    .trim()
-    .refine((data) => {
-      console.log(data);
-    }),
+  email: z.string().trim(),
+  password: z.string().trim(),
 });
 
 export function SigninForm({
@@ -49,8 +43,32 @@ export function SigninForm({
     resolver: zodResolver(schema),
   });
 
-  const onSubmit = (data: FormSignInData) => {
-    console.log(data);
+  const [serverError, setServerError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const onSubmit = async (data: FormSignInData) => {
+    setServerError(null);
+
+    try {
+      const response = await api.post("/auth/sign-in", data);
+
+      console.log(response);
+      localStorage.setItem("accessToken", response.data.accessToken);
+      localStorage.setItem("refreshToken", response.data.refreshToken);
+
+      router.push("/");
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message;
+        setServerError(
+          Array.isArray(message)
+            ? message[0]
+            : message || "Invalid email or password.",
+        );
+      } else {
+        setServerError("Something went wrong. Please try again.");
+      }
+    }
   };
 
   return (
@@ -98,6 +116,13 @@ export function SigninForm({
                   {errors.password?.message}
                 </p>
               </Field>
+
+              {serverError && (
+                <p className="text-sm text-red-500 text-center">
+                  {serverError}
+                </p>
+              )}
+
               <Field>
                 <Button type="submit" disabled={isSubmitting || !isValid}>
                   {isSubmitting ? "Logging in..." : "Login"}

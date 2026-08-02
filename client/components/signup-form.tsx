@@ -16,7 +16,10 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { redirect } from "next/navigation";
+import { useState } from "react";
+import { api } from "@/common";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
 const schema = z
   .object({
@@ -78,9 +81,32 @@ export function SignupForm({
     resolver: zodResolver(schema),
   });
 
-  const onSubmit = (data: FormSignUpData) => {
-    console.log(data);
-    redirect("/sign-in");
+  const [serverError, setServerError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const onSubmit = async (data: FormSignUpData) => {
+    setServerError(null);
+
+    try {
+      await api.post("/user/sign-up", {
+        name: data.userName,
+        email: data.email,
+        password: data.password,
+      });
+
+      router.push("/sign-in");
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message;
+        setServerError(
+          Array.isArray(message)
+            ? message[0]
+            : message || "Something went wrong. Please try again.",
+        );
+      } else {
+        setServerError("Something went wrong. Please try again.");
+      }
+    }
   };
 
   return (
@@ -120,33 +146,41 @@ export function SignupForm({
                   <p className="text-sm text-red-500 h-1 leading-5">
                     {errors.email?.message}
                   </p>
-                  <Field data-invalid={!!errors.password}>
-                    <FieldLabel htmlFor="password">Password</FieldLabel>
-                    <Input
-                      id="password"
-                      type="password"
-                      {...register("password")}
-                      aria-invalid={!!errors.password}
-                    />
-                    <p className="text-sm text-red-500 h-1 leading-5">
-                      {errors.password?.message}
-                    </p>
-                  </Field>
-                  <Field data-invalid={!!errors.confirmPassword}>
-                    <FieldLabel htmlFor="confirmPassword">
-                      Confirm Password
-                    </FieldLabel>
-                    <Input
-                      id="confirmPassword"
-                      type="password"
-                      {...register("confirmPassword")}
-                      aria-invalid={!!errors.confirmPassword}
-                    />
-                    <p className="text-sm text-red-500 h-1 leading-5">
-                      {errors.confirmPassword?.message}
-                    </p>
-                  </Field>
                 </Field>
+
+                <Field data-invalid={!!errors.password}>
+                  <FieldLabel htmlFor="password">Password</FieldLabel>
+                  <Input
+                    id="password"
+                    type="password"
+                    {...register("password")}
+                    aria-invalid={!!errors.password}
+                  />
+                  <p className="text-sm text-red-500 h-1 leading-5">
+                    {errors.password?.message}
+                  </p>
+                </Field>
+                <Field data-invalid={!!errors.confirmPassword}>
+                  <FieldLabel htmlFor="confirmPassword">
+                    Confirm Password
+                  </FieldLabel>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    {...register("confirmPassword")}
+                    aria-invalid={!!errors.confirmPassword}
+                  />
+                  <p className="text-sm text-red-500 h-1 leading-5">
+                    {errors.confirmPassword?.message}
+                  </p>
+                </Field>
+
+                {serverError && (
+                  <p className="text-sm text-red-500 text-center">
+                    {serverError}
+                  </p>
+                )}
+
                 <Field>
                   <Button type="submit" disabled={isSubmitting || !isValid}>
                     {isSubmitting ? "Creating..." : "Create Account"}
