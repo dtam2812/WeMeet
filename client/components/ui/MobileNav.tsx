@@ -4,32 +4,63 @@ import {
   Sheet,
   SheetClose,
   SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import Image from "next/image";
 import Link from "next/link";
 import { sideBarLinks } from "@/constants";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowRightFromBracket,
   faUser,
 } from "@fortawesome/free-solid-svg-icons";
+import { api } from "@/common";
+import { jwtDecode } from "jwt-decode";
+
+type JwtPayload = {
+  sub: string;
+  email: string;
+  name: string;
+};
 
 function MobileNav() {
   const pathName = usePathname();
   const [isOpenDropdown, setIsOpenDropdown] = useState<boolean>(false);
   const timeOutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<JwtPayload | null>(null);
+
+  const router = useRouter();
 
   useEffect(() => {
-    setIsLoggedIn(!!localStorage.getItem("refreshToken"));
+    const accessToken = localStorage.getItem("accessToken");
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    if (refreshToken) {
+      setIsLoggedIn(true);
+    }
+
+    if (accessToken) {
+      try {
+        const payload = jwtDecode<JwtPayload>(accessToken);
+        setUser(payload);
+      } catch {
+        setUser(null);
+      }
+    }
   }, []);
+
+  const getInitials = (name?: string) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   const onMouseEnter = () => {
     if (timeOutRef.current) clearTimeout(timeOutRef.current);
@@ -40,6 +71,25 @@ function MobileNav() {
     timeOutRef.current = setTimeout(() => setIsOpenDropdown(false), 150);
   };
 
+  const handleLogout = async () => {
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    try {
+      if (refreshToken) {
+        await api.post("/auth/logout", { refreshToken });
+      }
+    } catch (error) {
+      // Dù API lỗi, vẫn tiếp tục xóa token phía client bên dưới —
+      // không để user bị "kẹt" ở trạng thái tưởng đã đăng nhập
+    } finally {
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      setIsLoggedIn(false);
+      setUser(null);
+      router.push("/sign-in");
+    }
+  };
+
   return (
     <section className="w-full max-w-[264px]">
       <Sheet>
@@ -48,18 +98,27 @@ function MobileNav() {
             <div
               onMouseEnter={onMouseEnter}
               onMouseLeave={onMouseLeave}
-              className="relative rounded-full p-4 border border-red-600 cursor-pointer"
+              className="relative w-10 h-10 rounded-full bg-blue-1 text-white flex items-center justify-center font-semibold cursor-pointer"
             >
+              {getInitials(user?.name)}
+
               {isOpenDropdown && (
-                <div className="absolute bg-slate-300 w-40 top-10 right-0 text-start rounded-lg font-semibold">
-                  <div className=" flex items-center gap-2 p-3 hover:bg-slate-700 hover:text-white rounded-t-lg transition-all">
+                <div className="absolute bg-slate-300 w-52 top-12 right-0 text-start rounded-lg font-semibold text-black">
+                  <div className="p-3 border-b border-slate-400">
+                    <p className="text-sm font-semibold ">{user?.name}</p>
+                    <p className="text-xs text-slate-600 ">{user?.email}</p>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 hover:bg-slate-700 hover:text-white transition-all">
                     <FontAwesomeIcon icon={faUser} />
-                    <p className=" "> Your account</p>
+                    <p>Your account</p>
                   </div>
                   <hr />
-                  <div className=" flex items-center gap-2 p-3 hover:bg-slate-700 hover:text-white rounded-b-lg transition-all">
+                  <div
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 p-3 hover:bg-slate-700 hover:text-white rounded-b-lg transition-all cursor-pointer"
+                  >
                     <FontAwesomeIcon icon={faArrowRightFromBracket} />
-                    <p className=" "> Log out</p>
+                    <p>Log out</p>
                   </div>
                 </div>
               )}

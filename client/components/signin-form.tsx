@@ -52,7 +52,6 @@ export function SigninForm({
     try {
       const response = await api.post("/auth/sign-in", data);
 
-      console.log(response);
       localStorage.setItem("accessToken", response.data.accessToken);
       localStorage.setItem("refreshToken", response.data.refreshToken);
 
