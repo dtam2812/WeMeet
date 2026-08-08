@@ -45,6 +45,7 @@ function MobileNav() {
     if (accessToken) {
       try {
         const payload = jwtDecode<JwtPayload>(accessToken);
+        console.log(payload);
         setUser(payload);
       } catch {
         setUser(null);

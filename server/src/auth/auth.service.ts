@@ -27,7 +27,7 @@ export class AuthService {
     if (!isMatched)
       throw new UnauthorizedException('Invalid email address or password');
 
-    return this.issueTokens(user.id, user.email, user.name);
+    return this.issueTokens(user.id, user.email, user.name, user.imageUrl);
   }
 
   async refreshTokens(dto: RefreshTokenDto) {
@@ -54,7 +54,7 @@ export class AuthService {
       throw new UnauthorizedException('User no longer exists');
     }
 
-    return this.issueTokens(user.id, user.email, user.name);
+    return this.issueTokens(user.id, user.email, user.name, user.imageUrl);
   }
 
   async logout(dto: RefreshTokenDto) {
@@ -68,12 +68,18 @@ export class AuthService {
     return { message: 'Logged out successfully' };
   }
 
-  private async issueTokens(userId: string, email: string, name: string) {
+  private async issueTokens(
+    userId: string,
+    email: string,
+    name: string,
+    imageUrl: string | null,
+  ) {
     const accessToken = await this.jwtService.signAsync(
       {
         sub: userId,
         email,
         name,
+        imageUrl,
       },
       {
         expiresIn: (process.env.JWT_ACCESS_EXPIRES ?? '15m') as StringValue,
