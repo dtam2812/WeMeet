@@ -1,7 +1,59 @@
-import React from "react";
+"use client";
+import {
+  DeviceSettings,
+  useCall,
+  VideoPreview,
+} from "@stream-io/video-react-sdk";
+import React, { useEffect, useState } from "react";
 
-const MeetingSetup = () => {
-  return <div></div>;
+const MeetingSetup = ({
+  setIsSetupComplete,
+}: {
+  setIsSetupComplete: (value: boolean) => void;
+}) => {
+  const [isMicCamToggledOn, setIsMicCamToggledOn] = useState(false);
+
+  const call = useCall();
+
+  useEffect(() => {
+    if (isMicCamToggledOn) {
+      call?.camera.disable();
+      call?.microphone.disable();
+    } else {
+      call?.camera.enable();
+      call?.microphone.enable();
+    }
+  }, [isMicCamToggledOn, call?.camera, call?.microphone]);
+
+  return (
+    <div
+      className="flex h-sccreen w-full flex-col items-center
+  justify-center gap-3 text-white"
+    >
+      <h1 className="text-2xl font-bold">Set up</h1>
+      <VideoPreview />
+      <div className="flex h-16 items-center justify-center gap-3">
+        <label className="flex items-center justify-center gap-2 font-medium">
+          <input
+            type="checkbox"
+            checked={isMicCamToggledOn}
+            onChange={(e) => setIsMicCamToggledOn(e.target.checked)}
+          />
+          Join with mic and camera off
+        </label>
+        <DeviceSettings />
+      </div>
+      <button
+        onClick={() => {
+          call?.join();
+          setIsSetupComplete(true);
+        }}
+        className="rounded-md cursor-pointer border-green-500 hover:bg-transparent  bg-green-500 transition-all duration-300 px-4 py-2.5"
+      >
+        Join meeting
+      </button>
+    </div>
+  );
 };
 
 export default MeetingSetup;
