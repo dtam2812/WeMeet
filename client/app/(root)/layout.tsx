@@ -1,7 +1,29 @@
-import StreamVideoProvider from "@/providers/StreamClientProvider";
-import React, { ReactNode } from "react";
+// app/(root)/layout.tsx
+"use client";
 
-const RootLayout = ({ children }: { children: ReactNode }) => {
+import StreamVideoProvider from "@/providers/StreamClientProvider";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import Loader from "@/components/Loader";
+
+const RootLayout = ({ children }: { children: React.ReactNode }) => {
+  const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    const accessToken = localStorage.getItem("accessToken");
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    if (!accessToken || !refreshToken) {
+      router.push("/sign-in");
+      return;
+    }
+
+    setIsChecking(false);
+  }, [router]);
+
+  if (isChecking) return <Loader />;
+
   return (
     <main>
       <StreamVideoProvider>{children}</StreamVideoProvider>

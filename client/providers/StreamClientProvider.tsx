@@ -22,12 +22,16 @@ const StreamVideoProvider = ({ children }: { children: ReactNode }) => {
     const refreshToken = localStorage.getItem("refreshToken");
     const accessToken = localStorage.getItem("accessToken");
 
-    const user = jwtDecode<JwtPayload>(accessToken);
-
     if (!refreshToken || !accessToken) {
-      throw new Error("Unauthorized user");
+      console.error("Unauthorized user");
+      return;
     }
-    if (!apiKey) throw new Error("Missing Api key");
+    if (!apiKey) {
+      console.error("Missing Api key");
+      return;
+    }
+
+    const user = jwtDecode<JwtPayload>(accessToken);
 
     const client = new StreamVideoClient({
       apiKey,
