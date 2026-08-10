@@ -7,6 +7,8 @@ import MeetingModal from "./MeetingModal";
 import { jwtDecode } from "jwt-decode";
 import { Call, useStreamVideoClient } from "@stream-io/video-react-sdk";
 import { toast } from "sonner";
+import { Textarea } from "./ui/textarea";
+import ReactDatePicker from "react-datepicker";
 
 type value = {
   dateTime: Date;
@@ -123,6 +125,60 @@ const MeetingTypeList = () => {
         buttonText="Start Meeting"
         handleClick={createMeeting}
       />
+
+      {!callDetails ? (
+        <MeetingModal
+          isOpen={meetingState === "isScheduleMeeting"}
+          onClose={() => setMeetingState(undefined)}
+          title="Create Meeting"
+          handleClick={createMeeting}
+        >
+          <div className="flex flex-col gap-2.5 ">
+            <label className="text-base text-normal leading-[22px] text-sky-2">
+              Add a description
+            </label>
+            <Textarea
+              onChange={(e) =>
+                setMeetingValue({
+                  ...meetingValue,
+                  description: e.target.value,
+                })
+              }
+            />
+          </div>
+          <div className="flex w-full flex-col gap-2.5">
+            <label className="text-base text-normal leading-[22px] text-sky-2">
+              Select Date and Time
+            </label>
+            <ReactDatePicker
+              selected={meetingValue.dateTime}
+              onChange={(date) =>
+                setMeetingValue({ ...meetingValue, dateTime: date! })
+              }
+              showTimeSelect
+              timeFormat="HH:mm"
+              timeIntervals={15}
+              timeCaption="time"
+              dateFormat="MMMM d, yyyy h:mm aa"
+              className="w-full rounded bg-dark-3 p-2 focus:outline-none cursor-pointer border"
+            />
+          </div>
+        </MeetingModal>
+      ) : (
+        <MeetingModal
+          isOpen={meetingState === "isScheduleMeeting"}
+          onClose={() => setMeetingState(undefined)}
+          title="Meeting Created"
+          className="text-center"
+          buttonText="Copy Meeting Link"
+          handleClick={() => {
+            /* navigator.clipboard.writeText(meetingLink);
+          toast({title:'Linkcopied'}) */
+          }}
+          image="/icons/checked.svg"
+          buttonIcon="/icons/copy.svg"
+        />
+      )}
     </section>
   );
 };
