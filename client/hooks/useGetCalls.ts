@@ -41,9 +41,16 @@ export const useGetCalls = () => {
     return (startsAt && new Date(startsAt) < now) || !!endedAt;
   });
 
-  const upcomingCalls = calls.filter(({ state: { startsAt } }: Call) => {
-    return startsAt && new Date(startsAt) > now;
-  });
+  const upcomingCalls = calls.filter(
+    ({ state: { startsAt, endedAt } }: Call) => {
+      // A call only counts as "upcoming" if it's scheduled in the future
+      // AND it hasn't actually been started/ended yet. Without the `!endedAt`
+      // check, a meeting started early and ended before its scheduled
+      // `startsAt` time would still show up here, since `startsAt` is still
+      // in the future relative to `now`.
+      return startsAt && new Date(startsAt) > now && !endedAt;
+    },
+  );
 
   return {
     endedCalls,
