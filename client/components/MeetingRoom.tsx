@@ -6,6 +6,7 @@ import {
   CallStatsButton,
   PaginatedGridLayout,
   SpeakerLayout,
+  useCall,
   useCallStateHooks,
 } from "@stream-io/video-react-sdk";
 import React, { useState } from "react";
@@ -22,7 +23,7 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faIndent } from "@fortawesome/free-solid-svg-icons";
 import { User } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import EndCallButton from "./EndCallButton";
 import Loader from "./Loader";
 
@@ -33,11 +34,36 @@ const MeetingRoom = () => {
   const [showParticipants, setShowParticipants] = useState(false);
   const searchParams = useSearchParams();
   const isPersonalRoom = !!searchParams.get("personal");
+  const router = useRouter();
+  const call = useCall();
 
   const { useCallCallingState } = useCallStateHooks();
   const callingState = useCallCallingState();
 
+  // Người dùng đã tự rời phòng (bấm Leave call) -> điều hướng ngay về trang chủ
+  // thay vì đứng mãi ở màn hình Loader chờ callingState quay lại JOINED.
+  if (
+    callingState === CallingState.LEFT ||
+    callingState === CallingState.IDLE
+  ) {
+    router.push("/");
+    return <Loader />;
+  }
+
   if (callingState !== CallingState.JOINED) return <Loader />;
+
+  // Khi rời cuộc gọi: tắt hẳn camera/mic (dừng track thật sự, không chỉ ngưng publish)
+  // rồi mới điều hướng về trang chủ.
+  const handleLeave = async () => {
+    try {
+      await call?.camera.disable();
+      await call?.microphone.disable();
+    } catch (error) {
+      console.error("Failed to disable devices on leave:", error);
+    } finally {
+      router.push("/");
+    }
+  };
 
   const CallLayout = () => {
     switch (layout) {
@@ -67,7 +93,7 @@ const MeetingRoom = () => {
       </div>
 
       <div className="fixed bottom-0 flex w-full items-center justify-center gap-5 flex-wrap pb-2">
-        <CallControls />
+        <CallControls onLeave={handleLeave} />
 
         <DropdownMenu>
           <DropdownMenuTrigger className="text-lg cursor-pointer px-2 py-1 rounded-2xl bg-[#19232d] hover:bg-[#4c535b]">

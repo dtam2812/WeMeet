@@ -49,7 +49,11 @@ const MeetingTypeList = () => {
         },
       });
       setCallDetail(call);
-      if (!values.description) {
+
+      // Chỉ tự động vào phòng ngay khi đây là "Instant Meeting".
+      // "Schedule Meeting" chỉ tạo cuộc họp cho sau này, không được vào phòng
+      // (và do đó không được bật camera/mic) ngay lúc tạo.
+      if (meetingState === "isInstantMeeting") {
         router.push(`/meeting/${call.id}`);
       }
       toast("Meeting Created");

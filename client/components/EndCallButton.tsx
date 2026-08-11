@@ -20,6 +20,15 @@ const EndCallButton = () => {
     <div>
       <button
         onClick={async () => {
+          try {
+            await call.camera.disable();
+            await call.microphone.disable();
+          } catch (error) {
+            console.error(
+              "Failed to disable devices before ending call:",
+              error,
+            );
+          }
           await call.endCall();
           router.push("/");
         }}
